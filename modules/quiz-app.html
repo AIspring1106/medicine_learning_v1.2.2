@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>医薬品クイズ</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  
+
+
+  <link rel="stylesheet" href="quiz.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>医薬品クイズ</h1>
+      <p>販売名・一般名・薬効を貼り付けて、そのまま暗記確認できる軽量アプリ</p>
+    </div>
+    <div class="pill">Enterで操作 / 画像なし / 重複出題なし</div>
+  </header>
+
+  <section id="homeScreen" class="screen active">
+    <div class="grid">
+      <div class="card">
+        <h2>データ入力</h2>
+        <p class="sub">「販売名,一般名,薬効」を1行ずつ貼り付けて読み込んでください。複数の薬剤を読み込む場合は改行をしてください。区切りはカンマのみを前提にしています。</p>
+        <textarea id="dataInput" placeholder="ここにデータを貼り付けてください。"></textarea>
+        <div class="spaced" style="margin-top:10px;"><div class="muted stat" id="loadStatus">未読み込み</div><button class="btn secondary" id="loadBtn">読み込む</button></div>
+      </div>
+
+      <div class="card">
+        <h2>出題設定</h2>
+        <p class="sub">複数選択したパターンを混ぜて出題します。重複行は自動で除外します。</p>
+        <div class="checklist" id="patternList"></div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn success" id="startBtn">開始</button>
+                  </div>
+        <div class="row" style="margin-top:10px;"><button class="btn secondary" id="clearHistoryBtn">履歴を消去</button></div>
+        <p class="footerNote">このアプリは学習補助用です。実務では必ず公的資料や製品資料で再確認してください。</p>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:16px;">
+      <div class="card">
+        <div class="spaced"><h2>直近の誤答</h2><span class="badge warn" id="wrongCountBadge">0件</span></div>
+        <div class="row" style="margin-bottom:10px;">
+          <button class="btn secondary" id="toggleWrongBtn">表示 / 非表示</button>
+                    <button class="btn secondary" id="clearWrongBtn">この一覧を消去</button>
+        </div>
+        <div id="wrongHomeArea" class="wrongList"></div>
+      </div>
+      <div class="card">
+        <h2>履歴</h2>
+        <p class="sub">このタブで解いた結果を記録します。最新10件だけを一覧表示します。</p>
+        <div id="historyArea" class="historyList"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>説明</h2>
+      <p class="sub">
+        この画面でテキストを貼り付けて読み込み、出題パターンを選んで開始します。<br>
+        出題中は <span class="kbd">Enter</span> で「答えを表示 / 次へ / 結果へ」を操作できます。<br>
+        入力が空のときは「答えを表示」を押せません。<br>
+        表記ゆれは、全角・半角英数字を吸収し、記号の違いは無視して判定します。
+      </p>
+    </div>
+  </section>
+
+  <section id="quizScreen" class="screen">
+    <div class="split">
+      <div class="card">
+        <div class="spaced">
+          <div><div class="badge" id="quizCounter">0 / 0</div><div class="tiny" style="margin-top:8px;">Enterで主操作を実行</div></div>
+          <div class="row"><button class="btn warn" id="endBtn">終わる</button><button class="btn secondary" id="homeBtnTop">ホームへ</button></div>
+        </div>
+        <div style="margin-top:14px;" class="progressBar"><div id="progressFill" class="progressFill"></div></div>
+        <div class="questionBox" style="margin-top:16px;"><div class="qLabel">問題</div><div id="questionText" class="qText">-</div><div id="patternText" class="patternText">-</div></div>
+        <div style="margin-top:14px;" class="col">
+          <label class="muted" for="answerInput">解答</label>
+          <div class="tiny">※解答必須</div>
+          <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="ここに入力" />
+        </div>
+        <div class="row" style="margin-top:14px;"><button class="btn" id="mainActionBtn" disabled>答えを表示</button></div>
+        <div id="feedbackBox" class="feedback" style="display:none;"></div>
+      </div>
+
+      <div class="card">
+        <h2>出題元</h2>
+        <div class="list">
+          <div class="item"><div class="itemTitle">販売名</div><div id="srcSales" class="itemMeta">-</div></div>
+          <div class="item"><div class="itemTitle">一般名</div><div id="srcGeneric" class="itemMeta">-</div></div>
+          <div class="item"><div class="itemTitle">薬効</div><div id="srcEffect" class="itemMeta">-</div></div>
+        </div>
+        <div class="divider"></div>
+        <h3>ルール</h3>
+        <p class="sub">
+          1回目のEnterまたはボタン押下で答えを表示します。<br>
+          2回目のEnterまたは「次へ」で次の問題へ進みます。<br>
+          「終わる」で、その時点までの結果を集計します。<br>
+          進行バーは「次へ」を押した時点で1問として進みます。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultScreen" class="screen">
+    <div class="card">
+      <div class="spaced">
+        <div><h2 style="font-size:1.35rem;margin-bottom:6px;">結果</h2><div class="muted">解き終わりの集計を表示しています</div></div>
+        <div class="row">
+          <button class="btn warn" id="reviewWrongResultBtn">誤答を今すぐ復習</button>
+          <button class="btn warn" id="reviewAllWrongResultBtn">今までの誤答を総復習</button>
+          <button class="btn secondary" id="backHomeBtn">ホームへ</button>
+          <button class="btn success" id="retryBtn">もう一度</button>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:16px;">
+        <div class="card" style="background:var(--card2)">
+          <h3>成績</h3>
+          <div class="row" style="gap:12px;flex-wrap:wrap;">
+            <span class="badge good" id="resultScore">正解 0 / 0</span>
+            <span class="badge" id="resultAccuracy">正答率 0.0%</span>
+            <span class="badge warn" id="resultAnswered">解答済み 0</span>
+          </div>
+          <p class="footerNote" id="resultNote">-</p>
+        </div>
+        <div class="card" style="background:var(--card2)">
+          <h3>間違えた問題</h3>
+          <div id="resultWrongArea" class="wrongList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="quiz.js"></script>
+</body>
+</html>

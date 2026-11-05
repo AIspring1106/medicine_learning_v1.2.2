@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>医薬品暗記カード</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  
+
+
+  <link rel="stylesheet" href="flashcards.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>医薬品暗記カード</h1>
+      <p>販売名・一般名・薬効を貼り付けて、ブックマーク付きの暗記カードとして使える軽量アプリ</p>
+    </div>
+    <div class="pill">カードをタップで裏返す / 前へ・次へで移動 / 重複行は自動除外</div>
+  </header>
+
+  <section id="homeScreen" class="screen active">
+    <div class="grid">
+      <div class="card">
+        <h2>データ入力</h2>
+        <p class="sub">「販売名,一般名,薬効」を1行ずつ貼り付けて読み込んでください。区切りはカンマのみを前提にしています。</p>
+        <textarea id="dataInput" placeholder="ここにデータを貼り付けてください。"></textarea>
+        <div class="spaced" style="margin-top:10px;"><div class="muted stat" id="loadStatus">未読み込み</div><button class="btn secondary" id="loadBtn">読み込む</button></div>
+      </div>
+
+      <div class="card">
+        <h2>出題設定</h2>
+        <p class="sub">複数選択したパターンを混ぜて暗記カードを作成します。重複行は自動で除外します。</p>
+        <div class="checklist" id="patternList"></div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn success" id="startBtn">開始</button>
+          <label class="check" style="margin:0;min-width:220px;flex:1;">
+            <input type="checkbox" id="bookmarkedOnlyStart">
+            <div><b>ブックマークしたものだけ見る</b><span>保存済みカードだけで開始します</span></div>
+          </label>
+        </div>
+        <p class="footerNote">このアプリは学習補助用です。実務では必ず公的資料や製品資料で再確認してください。</p>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:16px;">
+      <div class="card">
+        <div class="spaced"><h2>ブックマーク一覧</h2><span class="badge bookmarked" id="bookmarkCountBadge">0件</span></div>
+        <div class="row" style="margin-bottom:10px;">
+          <button class="btn secondary" id="toggleBookmarkListBtn">表示 / 非表示</button>
+          <button class="btn secondary" id="clearBookmarksBtn">ブックマークを消去</button>
+        </div>
+        <div id="bookmarkHomeArea" class="list"></div>
+      </div>
+      <div class="card">
+        <h2>使い方</h2>
+        <p class="sub">
+          1. テキストを貼り付けて読み込む。<br>
+          2. 出題パターンを選び、必要なら「ブックマークしたものだけ見る」を有効化して開始する。<br>
+          3. カード本体を1回タップして裏返す。<br>
+          4. 「前に戻る」「次へ進む」でカードを移動する。<br>
+          5. 保存マークでブックマークし、色を切り替えて管理する。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="quizScreen" class="screen">
+    <div class="split">
+      <div class="card deckWrap">
+        <div class="spaced">
+          <div>
+            <div class="badge" id="quizCounter">0 / 0</div>
+            <div class="tiny" style="margin-top:8px;">Enterで主操作を実行</div>
+          </div>
+          <div class="row"><button class="btn warn" id="endBtn">終わる</button><button class="btn secondary" id="homeBtnTop">ホームへ</button></div>
+        </div>
+        <div style="margin-top:14px;" class="progressBar"><div id="progressFill" class="progressFill"></div></div>
+
+        <div class="deckStage" style="margin-top:16px;">
+          <div id="flashcard" class="flashcard">
+            <div class="flashcardFace flashcardFront">
+              <div class="cardTopRow">
+                <div>
+                  <div class="questionLabel">問題</div>
+                </div>              </div>
+
+              <div class="cardMain">
+                <div id="questionText" class="cardTitle">-</div>
+                <div id="patternText" class="cardSubtitle">-</div>
+              </div>
+
+              <div class="row" style="justify-content:flex-end;align-items:center;">
+                <button class="bookmarkBtn" id="bookmarkBtn" aria-label="ブックマーク">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75v18l-6-3.75-6 3.75v-18Z"></path></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="flashcardFace flashcardBack">
+              <div class="cardTopRow">
+                <div>
+                  <div class="questionLabel">答え</div>
+                </div>              </div>
+
+              <div class="cardMain">
+                <div id="answerTitle" class="cardTitle">-</div>
+                <div id="answerMeta" class="cardSubtitle">-</div>
+              </div>
+
+              <div class="row" style="justify-content:flex-end;align-items:center;">
+                <button class="bookmarkBtn" id="bookmarkBtnBack" aria-label="ブックマークの切り替え">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75v18l-6-3.75-6 3.75v-18Z"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="bookmarkMenu" class="bookmarkMenu" hidden>
+            <div class="bookmarkMenuTitle">ブックマーク色を選択</div>
+            <p class="bookmarkMenuNote">色を選んでから保存してください。保存マークだけを押したときに、このメニューが開きます。</p>
+            <div class="colorSwatches" id="bookmarkMenuSwatches"></div>
+            <div class="bookmarkMenuActions">
+              <button class="btn secondary" id="bookmarkMenuCloseBtn" type="button">閉じる</button>
+              <button class="btn success" id="bookmarkMenuSaveBtn" type="button">保存</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:14px;">
+          <button class="btn flip" id="mainActionBtn" disabled>裏返す</button>
+          <button class="btn secondary" id="prevBtn" disabled>前に戻る</button>
+          <button class="btn next" id="nextBtn" disabled>次へ進む</button>
+          <button class="btn secondary" id="toggleBookmarkOnlyBtn">保存済みのみで開始: OFF</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>出題元</h2>
+        <div class="list">
+          <div class="item"><div class="itemTitle">販売名</div><div id="srcSales" class="itemMeta">-</div></div>
+          <div class="item"><div class="itemTitle">一般名</div><div id="srcGeneric" class="itemMeta">-</div></div>
+          <div class="item"><div class="itemTitle">薬効</div><div id="srcEffect" class="itemMeta">-</div></div>
+        </div>
+        <div class="divider"></div>
+        <h3>ルール</h3>
+        <p class="sub">
+          カード本体をタップすると、そのカードだけを裏返します。<br>
+          「前に戻る」「次へ進む」でカードを移動します。<br>
+          「終わる」で学習セッションを終了し、ホームに戻ります。<br>
+          表示カードはブックマーク色で保存できます。
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="flashcards.js"></script>
+</body>
+</html>
