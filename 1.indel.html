@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="医薬品学習">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./2.style.css">
+  <title>医薬品学習アプリ</title>
+</head>
+<body>
+<div class="app">
+  <section id="loginScreen" class="screen active">
+    <div class="card loginCard">
+      <div class="brand">
+        <h1>医薬品学習アプリ</h1>
+        <p>医薬品クイズ・暗記カード 統合版</p>
+      </div>
+      <div class="divider"></div>
+      <h2>共通パスワードでログイン</h2>
+      <p class="sub">管理者から共有されたパスワードを入力してください。</p>
+      <form id="loginForm" class="loginForm">
+        <input id="commonPassword" type="password" autocomplete="current-password" placeholder="共通パスワード" required>
+        <button class="btn" type="submit">ログイン</button>
+      </form>
+      <p id="loginError" class="loginError" role="alert"></p>
+      <p id="passwordSetupNotice" class="footerNote"></p>
+      <div class="divider"></div>
+      <p class="tiny">このログインは同一端末・同一サイト内での簡易的な利用制限です。パスワードは公開されるJavaScriptに含まれるため、機密情報を保護する認証ではありません。</p>
+    </div>
+    <div class="card browserCard">
+      <h2>対応ブラウザ・インストール方法</h2>
+      <ul>
+        <li><b>Windows / macOS / Linux：</b>Chrome・EdgeでPWAとしてインストールできます。macOS Sonoma以降のSafariは「Dockに追加」に対応します。Firefoxデスクトップは通常のWebアプリとして利用できますが、manifestによる標準PWAインストールには対応しません。</li>
+        <li><b>Android：</b>Chrome・Samsung Internetでインストール可能です。Firefox・Edgeなどでは、端末やブラウザによりホーム画面ショートカットとして追加されます。</li>
+        <li><b>iPhone / iPad：</b>iOS 16.4以降はSafari等の共有メニューから「ホーム画面に追加」ができます。Safariでの追加を推奨します。</li>
+        <li><b>共通：</b>インストールとService Workerによるオフライン利用にはHTTPS配信、またはlocalhostが必要です。HTMLファイルを直接開く file:// ではPWAとしてインストールできません。</li>
+      </ul>
+      <p class="footerNote">インストールUIはOS・ブラウザのバージョンによって異なります。</p>
+    </div>
+  </section>
+
+  <div id="workspace" class="hidden">
+    <header>
+      <div class="brand">
+        <h1>医薬品学習アプリ</h1>
+        <p>医薬品クイズ・暗記カード 統合版</p>
+      </div>
+      <div class="headerActions">
+        <span class="pill">PWA / オフライン対応</span>
+        <button class="btn secondary small hidden" id="installBtn" type="button">アプリをインストール</button>
+        <button class="btn secondary small" id="logoutBtn" type="button">ログアウト</button>
+      </div>
+    </header>
+
+    <section id="modeScreen" class="screen active">
+      <div class="card" style="margin-bottom:16px">
+        <h2>学習モードを選択</h2>
+        <p class="sub">利用するモードを選択してください。次の共通メニューでデータと出題設定を行います。</p>
+      </div>
+      <div class="grid">
+        <div class="card modeCard">
+          <div><div class="modeIcon">✍️</div><h2 style="margin-top:8px">医薬品クイズ</h2><p>販売名・一般名・薬効の関係を入力解答で確認します。正誤判定、結果集計、誤答復習、学習履歴に対応します。</p></div>
+          <button class="btn" id="chooseQuizBtn" type="button">医薬品クイズを選択</button>
+        </div>
+        <div class="card modeCard">
+          <div><div class="modeIcon">🗂️</div><h2 style="margin-top:8px">暗記カード</h2><p>カードをタップして表裏を切り替えます。前後移動、ブックマーク、色分け、保存済みカードだけの学習に対応します。</p></div>
+          <button class="btn success" id="chooseFlashBtn" type="button">暗記カードを選択</button>
+        </div>
+      </div>
+      <p class="footerNote">学習補助用アプリです。医療・調剤などの実務では、必ず公的資料や最新の製品資料で再確認してください。</p>
+    </section>
+
+    <section id="menuScreen" class="screen">
+      <div class="menuToolbar">
+        <div><span class="badge" id="modeBadge">医薬品クイズ</span><h2 style="margin-top:8px">共通メニュー・学習設定</h2></div>
+        <button class="btn secondary" id="changeModeBtn" type="button">モード選択へ戻る</button>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h2>データ入力</h2>
+          <p class="sub">「販売名,一般名,薬効」を1行ずつ入力してください。複数の薬剤は改行で区切ります。3列は半角カンマで区切ります。</p>
+          <textarea id="sharedDataInput" placeholder="例：\n商品名A,一般名A,薬効A\n商品名B,一般名B,薬効B"></textarea>
+          <div class="row status">
+            <span class="muted" id="loadStatus">未読み込み</span>
+            <button class="btn secondary" id="loadDataBtn" type="button">読み込む</button>
+            <button class="btn secondary" id="loadJsonBtn" type="button">JSONを読み込む</button>
+            <input class="inlineFile" id="jsonDataFile" type="file" accept=".json,application/json">
+          </div>
+        </div>
+        <div class="card">
+          <h2>共通の出題設定</h2>
+          <p class="sub">出題したい方向を1つ以上選択してください。選択したパターンを混ぜて出題します。</p>
+          <div class="checklist" id="patternList">
+            <label class="check"><input type="checkbox" value="sales_to_generic" checked><div><b>販売名 → 一般名</b><span>販売名から一般名を答える</span></div></label>
+            <label class="check"><input type="checkbox" value="generic_to_sales" checked><div><b>一般名 → 販売名</b><span>一般名から販売名を答える</span></div></label>
+            <label class="check"><input type="checkbox" value="sales_to_effect" checked><div><b>販売名 → 薬効</b><span>販売名から薬効を答える</span></div></label>
+            <label class="check"><input type="checkbox" value="effect_to_sales" checked><div><b>薬効 → 販売名</b><span>薬効から販売名を答える</span></div></label>
+            <label class="check"><input type="checkbox" value="generic_to_effect" checked><div><b>一般名 → 薬効</b><span>一般名から薬効を答える</span></div></label>
+            <label class="check"><input type="checkbox" value="effect_to_generic" checked><div><b>薬効 → 一般名</b><span>薬効から一般名を答える</span></div></label>
+          </div>
+          <div id="flashcardOnlySetting" class="hidden">
+            <div class="divider"></div>
+            <label class="check"><input type="checkbox" id="bookmarkedOnly"><div><b>ブックマークしたものだけ見る</b><span>暗記カードで保存済みカードのみを出題します</span></div></label>
+          </div>
+          <div class="divider"></div>
+          <button class="btn success" id="startModeBtn" type="button" style="width:100%">学習を開始</button>
+          <p class="footerNote">重複するデータ行は自動で除外されます。このアプリは学習補助用です。</p>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:16px">
+        <div class="card">
+          <div class="spaced"><h2>ブックマーク一覧</h2><span class="badge bookmarked" id="bookmarkCount">0件</span></div>
+          <div class="row" style="margin-bottom:10px"><button class="btn secondary" id="toggleBookmarksBtn" type="button">表示 / 非表示</button><button class="btn secondary" id="clearBookmarksBtn" type="button">ブックマークを消去</button></div>
+          <div id="bookmarkList" class="list"></div>
+        </div>
+        <div class="card">
+          <div class="spaced"><h2>直近の誤答</h2><span class="badge warn" id="wrongCount">0件</span></div>
+          <div class="row" style="margin-bottom:10px">
+            <button class="btn secondary" id="toggleWrongsBtn" type="button">表示 / 非表示</button>
+            <button class="btn secondary" id="exportWrongCsvBtn" type="button">誤答CSV出力</button>
+            <button class="btn secondary" id="clearWrongsBtn" type="button">誤答一覧を消去</button>
+          </div>
+          <div id="wrongList" class="list"></div>
+          <p class="tiny">CSV項目：誤答日時・出題形式・問題・正答・入力内容</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="spaced"><h2>クイズの学習履歴</h2><button class="btn secondary" id="clearHistoryBtn" type="button">履歴を消去</button></div>
+        <p class="sub">医薬品クイズで解いた結果を記録します。最新10件を表示します。</p>
+        <div id="historyList" class="list"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>操作方法</h2>
+        <p class="sub" id="usageText">選択したモードの操作方法を表示します。</p>
+        <p class="footerNote">薬剤データはこの端末内で処理します。医薬品情報は改訂されるため、実務上の判断には必ず最新の公的資料・添付文書等を使用してください。</p>
+      </div>
+    </section>
+
+    <section id="quizFrameWrap" class="frameWrap"><iframe id="quizFrame" class="appFrame" title="医薬品クイズ"></iframe></section>
+    <section id="flashFrameWrap" class="frameWrap"><iframe id="flashFrame" class="appFrame" title="暗記カード"></iframe></section>
+  </div>
+</div>
+<script src="./data/config.js"></script>
+<script src="./database.js"></script>
+<script src="./3.app.js" defer></script>
+</body>
+</html>
