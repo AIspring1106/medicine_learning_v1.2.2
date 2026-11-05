@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "description": "医薬品データ。実際の内容は施設で確認した最新資料に基づいて入力してください。",
+  "items": [],
+  "itemSchema": {
+    "salesName": "販売名",
+    "genericName": "一般名",
+    "effect": "薬効"
+  }
+}

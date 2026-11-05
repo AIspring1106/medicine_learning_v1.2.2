@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "description": "問題は医薬品データと選択した出題パターンからアプリが自動生成します。",
+  "items": [],
+  "patternKeys": [
+    "sales_to_generic",
+    "generic_to_sales",
+    "sales_to_effect",
+    "effect_to_sales",
+    "generic_to_effect",
+    "effect_to_generic"
+  ]
+}
